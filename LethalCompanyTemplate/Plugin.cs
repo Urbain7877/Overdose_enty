@@ -78,7 +78,9 @@ namespace MonsterOverdoseCompany
             spawnedRobots.Clear();
             hasSequenceStarted = false;
 
-            SpawnableEnemyWithRarity robotEnemy = manager.currentLevel.OutsideEnemies.Find(e => e.enemyType.enemyName.ToLower().Contains("radmech"));
+            if (manager.currentLevel == null || manager.currentLevel.OutsideEnemies == null) return;
+
+            SpawnableEnemyWithRarity robotEnemy = manager.currentLevel.OutsideEnemies.Find(e => e.enemyType != null && e.enemyType.enemyName.ToLower().Contains("radmech"));
             if (robotEnemy == null) return;
 
             Vector3 shipPosition = Vector3.zero;
@@ -189,6 +191,8 @@ namespace MonsterOverdoseCompany
 
         static void TrySpawnChaosEnemy(RoundManager manager)
         {
+            if (StartOfRound.Instance == null || StartOfRound.Instance.allPlayerScripts == null) return;
+
             PlayerControllerB targetPlayer = StartOfRound.Instance.allPlayerScripts[Random.Range(0, StartOfRound.Instance.allPlayerScripts.Length)];
             if (targetPlayer == null || !targetPlayer.isPlayerControlled || targetPlayer.isPlayerDead) return;
 
@@ -199,6 +203,8 @@ namespace MonsterOverdoseCompany
             if (allEnemies.Count == 0) return;
 
             SpawnableEnemyWithRarity selectedEnemy = allEnemies[Random.Range(0, allEnemies.Count)];
+            if (selectedEnemy.enemyType == null) return;
+
             string enemyName = selectedEnemy.enemyType.enemyName.ToLower();
 
             bool isRobot = enemyName.Contains("radmech") || enemyName.Contains("old bird");
@@ -213,7 +219,11 @@ namespace MonsterOverdoseCompany
             NavMeshHit hit;
             if (NavMesh.SamplePosition(spawnPos, out hit, 30f, NavMesh.AllAreas))
             {
-                manager.SpawnEnemyOnServer(hit.position, 0f, manager.currentLevel.Enemies.IndexOf(selectedEnemy));
+                int enemyIndex = manager.currentLevel.Enemies != null ? manager.currentLevel.Enemies.IndexOf(selectedEnemy) : -1;
+                if (enemyIndex != -1)
+                {
+                    manager.SpawnEnemyOnServer(hit.position, 0f, enemyIndex);
+                }
             }
         }
 
