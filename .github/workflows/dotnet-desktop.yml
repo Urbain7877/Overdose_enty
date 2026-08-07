@@ -1,0 +1,29 @@
+name: .NET Build
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '6.0.x'
+
+    - name: Build project
+      run: dotnet build LethalCompanyTemplate/LethalCompanyTemplate.csproj --configuration Release
+
+    - name: Upload Build Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: MonsterOverdoseCompany
+        path: LethalCompanyTemplate/bin/Release/netstandard2.1/LethalCompanyTemplate.dll
