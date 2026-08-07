@@ -98,7 +98,6 @@ namespace MonsterOverdoseCompany
             while (spawnedCount < 25 && attempts < 200)
             {
                 attempts++;
-                // Remplacement de manager.outsideRadius par une valeur fixe sécurisée (ex: 70f)
                 Vector3 randomPoint = 70f * Random.insideUnitSphere;
                 NavMeshHit hit;
 
@@ -188,8 +187,6 @@ namespace MonsterOverdoseCompany
             }
         }
 
-        static void TrySpawnChaosEncryption(RoundManager manager) {} // Placeholder si besoin
-
         static void TrySpawnChaosEnemy(RoundManager manager)
         {
             PlayerControllerB targetPlayer = StartOfRound.Instance.allPlayerScripts[Random.Range(0, StartOfRound.Instance.allPlayerScripts.Length)];
@@ -226,7 +223,6 @@ namespace MonsterOverdoseCompany
             foreach (EnemyAI enemy in enemies)
             {
                 if (enemy.isEnemyDead) continue;
-                // Utilisation de méthodes sécurisées basées sur l'état général des ennemis
                 enemy.SwitchToBehaviourState(1);
             }
         }
@@ -242,7 +238,7 @@ namespace MonsterOverdoseCompany
         [HarmonyPostfix]
         static void CustomLeviathanMovement(SandWormAI __instance)
         {
-            if (__instance.isInsideFactory && __instance.targetPlayer != null && ChaosManager.gameTimer >= 420f)
+            if (__instance.targetPlayer != null && ChaosManager.gameTimer >= 420f)
             {
                 if (__instance.agent == null)
                 {
