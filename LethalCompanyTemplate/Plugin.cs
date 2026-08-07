@@ -22,7 +22,6 @@ namespace MonsterOverdoseCompany
             
             try
             {
-                // Utilisation de Assembly.GetType pour contourner le chargement statique des types corrompus de RoundManager
                 Assembly assembly = Assembly.GetAssembly(typeof(GameNetworkManager));
                 
                 System.Type roundManagerType = assembly.GetType("RoundManager");
@@ -67,9 +66,6 @@ namespace MonsterOverdoseCompany
         }
     }
 
-    // ==========================================
-    // 1. RÈGLE : BONUS DE +20% DE SCRAP
-    // ==========================================
     public class ScrapBonusPatch
     {
         public static void BoostScrapAmount(object __instance)
@@ -100,9 +96,6 @@ namespace MonsterOverdoseCompany
         }
     }
 
-    // ==========================================
-    // 2. DÉCLENCHEURS (ENTRÉE ET SORTIE COMPLEXE)
-    // ==========================================
     public class EntrancePatch
     {
         public static void Postfix(bool ___isEntranceToBuilding)
@@ -121,12 +114,9 @@ namespace MonsterOverdoseCompany
         }
     }
 
-    // ==========================================
-    // 3. GESTION DES 25 ROBOTS
-    // ==========================================
     public class RobotManager
     {
-        public static List<RadMechAI> spawnedRobots = new List<RadMechAI>();
+        public static List<object> spawnedRobots = new List<object>();
         public static bool hasSequenceStarted = false;
 
         public static void InitRobots(object managerObj)
@@ -149,7 +139,7 @@ namespace MonsterOverdoseCompany
             var outsideEnemies = outsideEnemiesField.GetValue(currentLevel) as System.Collections.IList;
             if (outsideEnemies == null) return;
 
-            SpawnableEnemyWithRarity robotEnemy = null;
+            object robotEnemy = null;
             foreach (var item in outsideEnemies)
             {
                 if (item == null) continue;
@@ -167,7 +157,7 @@ namespace MonsterOverdoseCompany
                             string name = enemyNameField.GetValue(enemyTypeObj) as string;
                             if (name != null && name.ToLower().Contains("radmech"))
                             {
-                                robotEnemy = (SpawnableEnemyWithRarity)item;
+                                robotEnemy = item;
                                 break;
                             }
                         }
@@ -176,6 +166,18 @@ namespace MonsterOverdoseCompany
             }
 
             if (robotEnemy == null) return;
+
+            System.Type robotEntryType = robotEnemy.GetType();
+            FieldInfo enemyTypeRefField = robotEntryType.GetField("enemyType");
+            if (enemyTypeRefField == null) return;
+            object enemyTypeInstance = enemyTypeRefField.GetValue(robotEnemy);
+            if (enemyTypeInstance == null) return;
+
+            System.Type enemyTypeClassType = enemyTypeInstance.GetType();
+            FieldInfo enemyPrefabField = enemyTypeClassType.GetField("enemyPrefab");
+            if (enemyPrefabField == null) return;
+            GameObject enemyPrefab = enemyPrefabField.GetValue(enemyTypeInstance) as GameObject;
+            if (enemyPrefab == null) return;
 
             Vector3 shipPosition = Vector3.zero;
             GameObject shipObj = GameObject.FindWithTag("Ship");
@@ -202,11 +204,10 @@ namespace MonsterOverdoseCompany
                     float distanceToShip = Vector3.Distance(hit.position, shipPosition);
                     if (distanceToShip < 20f) continue;
 
-                    GameObject obj = Object.Instantiate(robotEnemy.enemyType.enemyPrefab, hit.position, Quaternion.identity);
-                    RadMechAI robot = obj.GetComponent<RadMechAI>();
-                    if (robot != null)
+                    GameObject obj = Object.Instantiate(enemyPrefab, hit.position, Quaternion.identity);
+                    if (obj != null)
                     {
-                        spawnedRobots.Add(robot);
+                        spawnedRobots.Add(obj);
                         spawnedCount++;
                     }
                 }
@@ -216,21 +217,37 @@ namespace MonsterOverdoseCompany
 
         public static IEnumerator WakeUpRobotsSequence()
         {
-            foreach (RadMechAI robot in spawnedRobots)
+            foreach (object robotObj in spawnedRobots)
             {
-                if (robot != null && !robot.isEnemyDead)
+                if (robotObj != null)
                 {
-                    robot.SwitchToBehaviourState(1); 
-                    Debug.Log("[Monster-Overdose-Company] Un robot vient de se réveiller !");
+                    GameObject obj = robotObj as GameObject;
+                    if (obj != null)
+                    {
+                        Component enemyAIComp = obj.GetComponent("EnemyAI");
+                        if (enemyAIComp != null)
+                        {
+                            System.Type aiType = enemyAIComp.GetType();
+                            FieldInfo isDeadField = aiType.GetField("isEnemyDead");
+                            bool isDead = isDeadField != null && (bool)isDeadField.GetValue(enemyAIComp);
+
+                            if (!isDead)
+                            {
+                                MethodInfo switchMethod = aiType.GetMethod("SwitchToBehaviourState", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                                if (switchMethod != null)
+                                {
+                                    switchMethod.Invoke(enemyAIComp, new object[] { 1 });
+                                    Debug.Log("[Monster-Overdose-Company] Un robot vient de se réveiller !");
+                                }
+                            }
+                        }
+                    }
                 }
                 yield return new WaitForSeconds(10f);
             }
         }
     }
 
-    // ==========================================
-    // 4. GESTION DU CHAOS
-    // ==========================================
     public class ChaosManager
     {
         public static bool hasPlayerEntered = false;
@@ -359,41 +376,83 @@ namespace MonsterOverdoseCompany
 
         private static void MakeAllEnemiesHostile()
         {
-            EnemyAI[] enemies = Object.FindObjectsOfType<EnemyAI>();
-            foreach (EnemyAI enemy in enemies)
+            Component[] enemies = Object.FindObjectsOfType<Component>();
+            foreach (Component comp in enemies)
             {
-                if (enemy.isEnemyDead) continue;
-                enemy.SwitchToBehaviourState(1);
+                if (comp != null && comp.GetType().Name == "EnemyAI")
+                {
+                    System.Type aiType = comp.GetType();
+                    FieldInfo isDeadField = aiType.GetField("isEnemyDead");
+                    bool isDead = isDeadField != null && (bool)isDeadField.GetValue(comp);
+
+                    if (!isDead)
+                    {
+                        MethodInfo switchMethod = aiType.GetMethod("SwitchToBehaviourState", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                        if (switchMethod != null)
+                        {
+                            switchMethod.Invoke(comp, new object[] { 1 });
+                        }
+                    }
+                }
             }
         }
     }
 
-    // ==========================================
-    // 5. RÈGLE LÉVIATHAN
-    // ==========================================
     public class LeviathanIndoorPatch
     {
-        public static void CustomLeviathanMovement(SandWormAI __instance)
+        public static void CustomLeviathanMovement(object __instance)
         {
-            if (__instance.targetPlayer != null && ChaosManager.gameTimer >= 420f)
+            if (__instance == null || ChaosManager.gameTimer < 420f) return;
+
+            System.Type wormType = __instance.GetType();
+            FieldInfo targetPlayerField = wormType.GetField("targetPlayer");
+            if (targetPlayerField == null) return;
+
+            object targetPlayerObj = targetPlayerField.GetValue(__instance);
+            if (targetPlayerObj == null) return;
+
+            FieldInfo agentField = wormType.GetField("agent");
+            Component agent = agentField != null ? agentField.GetValue(__instance) as Component : null;
+
+            if (agent == null)
             {
-                if (__instance.agent == null)
+                GameObject go = wormType.GetProperty("gameObject")?.GetValue(__instance, null) as GameObject;
+                if (go != null)
                 {
-                    __instance.agent = __instance.gameObject.GetComponent<NavMeshAgent>();
+                    agent = go.GetComponent<NavMeshAgent>();
+                    if (agentField != null) agentField.SetValue(__instance, agent);
                 }
+            }
 
-                if (__instance.agent != null && __instance.agent.isOnNavMesh)
+            if (agent != null)
+            {
+                System.Type agentType = agent.GetType();
+                PropertyInfo isOnNavMeshProp = agentType.GetProperty("isOnNavMesh");
+                bool isOnNavMesh = isOnNavMeshProp != null && (bool)isOnNavMeshProp.GetValue(agent, null);
+
+                if (isOnNavMesh)
                 {
-                    float distance = Vector3.Distance(__instance.transform.position, __instance.targetPlayer.transform.position);
+                    Transform wormTransform = wormType.GetProperty("transform")?.GetValue(__instance, null) as Transform;
+                    Transform playerTransform = targetPlayerObj.GetType().GetProperty("transform")?.GetValue(__instance, null) as Transform; // ou direct via PlayerControllerB
 
-                    if (distance > 20f)
+                    if (wormTransform != null && targetPlayerObj is PlayerControllerB playerCtrl)
                     {
-                        __instance.agent.speed = 22f; 
-                        __instance.SetDestinationToPosition(__instance.targetPlayer.transform.position);
-                    }
-                    else
-                    {
-                        __instance.agent.speed = 5f; 
+                        float distance = Vector3.Distance(wormTransform.position, playerCtrl.transform.position);
+                        PropertyInfo speedProp = agentType.GetProperty("speed");
+
+                        if (distance > 20f)
+                        {
+                            if (speedProp != null) speedProp.SetValue(agent, 22f, null);
+                            MethodInfo setDestMethod = wormType.GetMethod("SetDestinationToPosition", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                            if (setDestMethod != null)
+                            {
+                                setDestMethod.Invoke(__instance, new object[] { playerCtrl.transform.position });
+                            }
+                        }
+                        else
+                        {
+                            if (speedProp != null) speedProp.SetValue(agent, 5f, null);
+                        }
                     }
                 }
             }
