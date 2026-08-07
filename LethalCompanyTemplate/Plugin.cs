@@ -19,8 +19,8 @@ namespace MonsterOverdoseCompany
             Instance = this;
             Logger.LogInfo("[Monster-Overdose-Company] Mod chargé avec succès ! Préparez-vous au chaos.");
             
-            // Désactivé temporairement pour éviter le crash StartOfRound / RoundManager
-            // harmony.PatchAll(); 
+            // Réactivation des patchs Harmony pour que le mod prenne vie
+            harmony.PatchAll(); 
         }
     }
 
