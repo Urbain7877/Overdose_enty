@@ -52,12 +52,12 @@ namespace MonsterOverdoseCompany
         [HarmonyPostfix]
         static void Postfix(bool ___isEntranceToBuilding)
         {
-            if (___isEntranceToBuilding && !ChaosManager.hasPlayerEntered)
+            if (___isEntranceToBuilding && !ChaosPatch.hasPlayerEntered)
             {
-                ChaosManager.hasPlayerEntered = true;
+                ChaosPatch.hasPlayerEntered = true;
                 Debug.Log("[Monster-Overdose-Company] Joueur entre ! Chrono activé.");
             }
-            else if (!___isEntranceToBuilding && ChaosManager.hasPlayerEntered && !RobotManager.hasSequenceStarted)
+            else if (!___isEntranceToBuilding && ChaosPatch.hasPlayerEntered && !RobotManager.hasSequenceStarted)
             {
                 RobotManager.hasSequenceStarted = true;
                 Plugin.Instance.StartCoroutine(RobotManager.WakeUpRobotsSequence());
@@ -141,7 +141,8 @@ namespace MonsterOverdoseCompany
     // ==========================================
     // 4. GESTION DU CHAOS ET DES SPAWNS MONSTRES
     // ==========================================
-    public class ChaosManager
+    [HarmonyPatch]
+    public class ChaosPatch
     {
         public static bool hasPlayerEntered = false;
         public static float gameTimer = 0f;
@@ -248,7 +249,7 @@ namespace MonsterOverdoseCompany
         [HarmonyPostfix]
         static void CustomLeviathanMovement(SandWormAI __instance)
         {
-            if (__instance.targetPlayer != null && ChaosManager.gameTimer >= 420f)
+            if (__instance.targetPlayer != null && ChaosPatch.gameTimer >= 420f)
             {
                 if (__instance.agent == null)
                 {
