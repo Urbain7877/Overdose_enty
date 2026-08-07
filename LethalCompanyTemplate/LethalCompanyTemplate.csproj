@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
-    <AssemblyName>LethalCompanyTemplate</AssemblyName>
-    <Description>My Lethal Company Mod</Description>
+    <AssemblyName>MonsterOverdoseCompany</AssemblyName>
+    <Description>Un mod complètement chaotique pour Lethal Company</Description>
     <Version>1.0.0</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
@@ -11,34 +11,29 @@
 
   <ItemGroup>
     <PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
-    <PackageReference Include="BepInEx.Core" Version="5.*" />
-    <PackageReference Include="BepInEx.PluginInfoProps" Version="1.*" />
+    <PackageReference Include="BepInEx.Core" Version="5.4.21" />
   </ItemGroup>
 
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
-      <HintPath>libs\Assembly-CSharp.dll</HintPath>
-      <Private>false</Private>
+      <HintPath>..\libs\Assembly-CSharp.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Unity.Netcode.Runtime">
-      <HintPath>libs\Unity.Netcode.Runtime.dll</HintPath>
-      <Private>false</Private>
+      <HintPath>..\libs\Unity.Netcode.Runtime.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine">
-      <HintPath>libs\UnityEngine.dll</HintPath>
-      <Private>false</Private>
+      <HintPath>..\libs\UnityEngine.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>libs\UnityEngine.CoreModule.dll</HintPath>
-      <Private>false</Private>
+      <HintPath>..\libs\UnityEngine.CoreModule.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.AIModule">
-      <HintPath>libs\UnityEngine.AIModule.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="UnityEngine.AudioModule">
-      <HintPath>libs\UnityEngine.AudioModule.dll</HintPath>
-      <Private>false</Private>
+      <HintPath>..\libs\UnityEngine.AIModule.dll</HintPath>
+      <Private>False</Private>
     </Reference>
   </ItemGroup>
 
