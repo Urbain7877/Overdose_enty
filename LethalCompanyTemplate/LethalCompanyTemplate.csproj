@@ -19,11 +19,8 @@ jobs:
       with:
         dotnet-version: '6.0.x'
 
-    - name: Restore dependencies
-      run: dotnet restore LethalCompanyTemplate/LethalCompanyTemplate.csproj
-
     - name: Build project
-      run: dotnet build LethalCompanyTemplate/LethalCompanyTemplate.csproj --configuration Release --no-restore
+      run: dotnet build LethalCompanyTemplate/LethalCompanyTemplate.csproj --configuration Release
 
     - name: Upload Build Artifact
       uses: actions/upload-artifact@v4
