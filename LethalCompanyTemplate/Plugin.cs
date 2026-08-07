@@ -433,7 +433,6 @@ namespace MonsterOverdoseCompany
                 if (isOnNavMesh)
                 {
                     Transform wormTransform = wormType.GetProperty("transform")?.GetValue(__instance, null) as Transform;
-                    Transform playerTransform = targetPlayerObj.GetType().GetProperty("transform")?.GetValue(__instance, null) as Transform; // ou direct via PlayerControllerB
 
                     if (wormTransform != null && targetPlayerObj is PlayerControllerB playerCtrl)
                     {
