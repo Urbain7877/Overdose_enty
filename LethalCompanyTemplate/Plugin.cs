@@ -19,7 +19,6 @@ namespace MonsterOverdoseCompany
             Instance = this;
             Logger.LogInfo("[Monster-Overdose-Company] Mod chargé avec succès ! Préparez-vous au chaos.");
             
-            // Activation des patchs Harmony
             harmony.PatchAll(); 
         }
     }
@@ -52,12 +51,12 @@ namespace MonsterOverdoseCompany
         [HarmonyPostfix]
         static void Postfix(bool ___isEntranceToBuilding)
         {
-            if (___isEntranceToBuilding && !ChaosPatch.hasPlayerEntered)
+            if (___isEntranceToBuilding && !ChaosManager.hasPlayerEntered)
             {
-                ChaosPatch.hasPlayerEntered = true;
+                ChaosManager.hasPlayerEntered = true;
                 Debug.Log("[Monster-Overdose-Company] Joueur entre ! Chrono activé.");
             }
-            else if (!___isEntranceToBuilding && ChaosPatch.hasPlayerEntered && !RobotManager.hasSequenceStarted)
+            else if (!___isEntranceToBuilding && ChaosManager.hasPlayerEntered && !RobotManager.hasSequenceStarted)
             {
                 RobotManager.hasSequenceStarted = true;
                 Plugin.Instance.StartCoroutine(RobotManager.WakeUpRobotsSequence());
@@ -139,44 +138,49 @@ namespace MonsterOverdoseCompany
     }
 
     // ==========================================
-    // 4. GESTION DU CHAOS ET DES SPAWNS MONSTRES
+    // 4. GESTION DU CHAOS (PATCH CIBLÉ STRICT)
     // ==========================================
-    [HarmonyPatch]
-    public class ChaosPatch
+    public class ChaosManager
     {
         public static bool hasPlayerEntered = false;
         public static float gameTimer = 0f;
         public static float spawnIntervalTimer = 0f;
+    }
 
-        [HarmonyPatch(typeof(RoundManager), "Start")]
+    [HarmonyPatch(typeof(RoundManager), "Start")]
+    public class RoundManagerStartPatch
+    {
         [HarmonyPostfix]
-        static void ResetOnStart(RoundManager __instance)
+        static void Postfix(RoundManager __instance)
         {
-            hasPlayerEntered = false;
-            gameTimer = 0f;
-            spawnIntervalTimer = 0f;
+            ChaosManager.hasPlayerEntered = false;
+            ChaosManager.gameTimer = 0f;
+            ChaosManager.spawnIntervalTimer = 0f;
             RobotManager.InitRobots(__instance);
         }
+    }
 
-        [HarmonyPatch(typeof(RoundManager), "Update")]
+    [HarmonyPatch(typeof(RoundManager), "Update")]
+    public class RoundManagerUpdatePatch
+    {
         [HarmonyPostfix]
-        static void UpdateChaos(RoundManager __instance)
+        static void Postfix(RoundManager __instance)
         {
-            if (!hasPlayerEntered || __instance.currentLevel == null) return;
+            if (!ChaosManager.hasPlayerEntered || __instance.currentLevel == null) return;
 
-            gameTimer += Time.deltaTime;
-            spawnIntervalTimer += Time.deltaTime;
+            ChaosManager.gameTimer += Time.deltaTime;
+            ChaosManager.spawnIntervalTimer += Time.deltaTime;
 
-            int currentMaxEnemies = 10 + (int)(gameTimer / 120f) * 10;
+            int currentMaxEnemies = 10 + (int)(ChaosManager.gameTimer / 120f) * 10;
             if (currentMaxEnemies > 60) currentMaxEnemies = 60;
 
             __instance.currentLevel.maxEnemyPowerCount = currentMaxEnemies;
             __instance.currentLevel.maxOutsideEnemyPowerCount = currentMaxEnemies;
 
-            if (spawnIntervalTimer >= 10f)
+            if (ChaosManager.spawnIntervalTimer >= 10f)
             {
-                spawnIntervalTimer = 0f;
-                float chance = (gameTimer < 120f) ? 0.30f : 0.85f;
+                ChaosManager.spawnIntervalTimer = 0f;
+                float chance = (ChaosManager.gameTimer < 120f) ? 0.30f : 0.85f;
 
                 if (Random.value <= chance)
                 {
@@ -184,13 +188,13 @@ namespace MonsterOverdoseCompany
                 }
             }
 
-            if (gameTimer >= 300f)
+            if (ChaosManager.gameTimer >= 300f)
             {
                 MakeAllEnemiesHostile();
             }
         }
 
-        public static void TrySpawnChaosEnemy(RoundManager manager)
+        private static void TrySpawnChaosEnemy(RoundManager manager)
         {
             if (StartOfRound.Instance == null || StartOfRound.Instance.allPlayerScripts == null) return;
 
@@ -213,7 +217,7 @@ namespace MonsterOverdoseCompany
             bool isInside = targetPlayer.isInsideFactory;
 
             if (isInside && isRobot) return;
-            if (isLeviathan && gameTimer < 420f) return;
+            if (isLeviathan && ChaosManager.gameTimer < 420f) return;
 
             Vector3 spawnPos = targetPlayer.transform.position + (Random.insideUnitSphere * Random.Range(5f, 30f));
 
@@ -228,7 +232,7 @@ namespace MonsterOverdoseCompany
             }
         }
 
-        public static void MakeAllEnemiesHostile()
+        private static void MakeAllEnemiesHostile()
         {
             EnemyAI[] enemies = Object.FindObjectsOfType<EnemyAI>();
             foreach (EnemyAI enemy in enemies)
@@ -249,7 +253,7 @@ namespace MonsterOverdoseCompany
         [HarmonyPostfix]
         static void CustomLeviathanMovement(SandWormAI __instance)
         {
-            if (__instance.targetPlayer != null && ChaosPatch.gameTimer >= 420f)
+            if (__instance.targetPlayer != null && ChaosManager.gameTimer >= 420f)
             {
                 if (__instance.agent == null)
                 {
