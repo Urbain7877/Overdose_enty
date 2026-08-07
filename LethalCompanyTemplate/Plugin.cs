@@ -19,7 +19,7 @@ namespace MonsterOverdoseCompany
             Instance = this;
             Logger.LogInfo("[Monster-Overdose-Company] Mod chargé avec succès ! Préparez-vous au chaos.");
             
-            // Réactivation des patchs Harmony pour que le mod prenne vie
+            // Activation des patchs Harmony
             harmony.PatchAll(); 
         }
     }
@@ -27,10 +27,9 @@ namespace MonsterOverdoseCompany
     // ==========================================
     // 1. RÈGLE : BONUS DE +20% DE SCRAP
     // ==========================================
-    [HarmonyPatch(typeof(RoundManager))]
+    [HarmonyPatch(typeof(RoundManager), "SpawnScrapInLevel")]
     public class ScrapBonusPatch
     {
-        [HarmonyPatch("SpawnScrapInLevel")]
         [HarmonyPrefix]
         static void BoostScrapAmount(RoundManager __instance)
         {
@@ -142,14 +141,13 @@ namespace MonsterOverdoseCompany
     // ==========================================
     // 4. GESTION DU CHAOS ET DES SPAWNS MONSTRES
     // ==========================================
-    [HarmonyPatch(typeof(RoundManager))]
     public class ChaosManager
     {
         public static bool hasPlayerEntered = false;
         public static float gameTimer = 0f;
         public static float spawnIntervalTimer = 0f;
 
-        [HarmonyPatch("Start")]
+        [HarmonyPatch(typeof(RoundManager), "Start")]
         [HarmonyPostfix]
         static void ResetOnStart(RoundManager __instance)
         {
@@ -159,7 +157,7 @@ namespace MonsterOverdoseCompany
             RobotManager.InitRobots(__instance);
         }
 
-        [HarmonyPatch("Update")]
+        [HarmonyPatch(typeof(RoundManager), "Update")]
         [HarmonyPostfix]
         static void UpdateChaos(RoundManager __instance)
         {
@@ -191,7 +189,7 @@ namespace MonsterOverdoseCompany
             }
         }
 
-        static void TrySpawnChaosEnemy(RoundManager manager)
+        public static void TrySpawnChaosEnemy(RoundManager manager)
         {
             if (StartOfRound.Instance == null || StartOfRound.Instance.allPlayerScripts == null) return;
 
@@ -229,7 +227,7 @@ namespace MonsterOverdoseCompany
             }
         }
 
-        static void MakeAllEnemiesHostile()
+        public static void MakeAllEnemiesHostile()
         {
             EnemyAI[] enemies = Object.FindObjectsOfType<EnemyAI>();
             foreach (EnemyAI enemy in enemies)
