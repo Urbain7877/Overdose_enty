@@ -19,18 +19,40 @@ namespace MonsterOverdoseCompany
             Instance = this;
             Logger.LogInfo("[Monster-Overdose-Company] Mod chargé avec succès ! Préparez-vous au chaos.");
             
-            harmony.PatchAll(); 
+            // Patch manuel un par un pour éviter tout scan global de classe par Harmony
+            harmony.Patch(
+                AccessTools.Method(typeof(RoundManager), "SpawnScrapInLevel"),
+                prefix: new HarmonyMethod(typeof(ScrapBonusPatch), nameof(ScrapBonusPatch.BoostScrapAmount))
+            );
+
+            harmony.Patch(
+                AccessTools.Method(typeof(EntranceTeleport), "TeleportPlayer"),
+                postfix: new HarmonyMethod(typeof(EntrancePatch), nameof(EntrancePatch.Postfix))
+            );
+
+            harmony.Patch(
+                AccessTools.Method(typeof(RoundManager), "Start"),
+                postfix: new HarmonyMethod(typeof(RoundManagerStartPatch), nameof(RoundManagerStartPatch.Postfix))
+            );
+
+            harmony.Patch(
+                AccessTools.Method(typeof(RoundManager), "Update"),
+                postfix: new HarmonyMethod(typeof(RoundManagerUpdatePatch), nameof(RoundManagerUpdatePatch.Postfix))
+            );
+
+            harmony.Patch(
+                AccessTools.Method(typeof(SandWormAI), "Update"),
+                postfix: new HarmonyMethod(typeof(LeviathanIndoorPatch), nameof(LeviathanIndoorPatch.CustomLeviathanMovement))
+            );
         }
     }
 
     // ==========================================
     // 1. RÈGLE : BONUS DE +20% DE SCRAP
     // ==========================================
-    [HarmonyPatch(typeof(RoundManager), "SpawnScrapInLevel")]
     public class ScrapBonusPatch
     {
-        [HarmonyPrefix]
-        static void BoostScrapAmount(RoundManager __instance)
+        public static void BoostScrapAmount(RoundManager __instance)
         {
             if (__instance.currentLevel != null)
             {
@@ -44,12 +66,9 @@ namespace MonsterOverdoseCompany
     // ==========================================
     // 2. DÉCLENCHEURS (ENTRÉE ET SORTIE COMPLEXE)
     // ==========================================
-    [HarmonyPatch(typeof(EntranceTeleport))]
     public class EntrancePatch
     {
-        [HarmonyPatch("TeleportPlayer")]
-        [HarmonyPostfix]
-        static void Postfix(bool ___isEntranceToBuilding)
+        public static void Postfix(bool ___isEntranceToBuilding)
         {
             if (___isEntranceToBuilding && !ChaosManager.hasPlayerEntered)
             {
@@ -138,7 +157,7 @@ namespace MonsterOverdoseCompany
     }
 
     // ==========================================
-    // 4. GESTION DU CHAOS (PATCH CIBLÉ STRICT)
+    // 4. GESTION DU CHAOS
     // ==========================================
     public class ChaosManager
     {
@@ -147,11 +166,9 @@ namespace MonsterOverdoseCompany
         public static float spawnIntervalTimer = 0f;
     }
 
-    [HarmonyPatch(typeof(RoundManager), "Start")]
     public class RoundManagerStartPatch
     {
-        [HarmonyPostfix]
-        static void Postfix(RoundManager __instance)
+        public static void Postfix(RoundManager __instance)
         {
             ChaosManager.hasPlayerEntered = false;
             ChaosManager.gameTimer = 0f;
@@ -160,11 +177,9 @@ namespace MonsterOverdoseCompany
         }
     }
 
-    [HarmonyPatch(typeof(RoundManager), "Update")]
     public class RoundManagerUpdatePatch
     {
-        [HarmonyPostfix]
-        static void Postfix(RoundManager __instance)
+        public static void Postfix(RoundManager __instance)
         {
             if (!ChaosManager.hasPlayerEntered || __instance.currentLevel == null) return;
 
@@ -246,12 +261,9 @@ namespace MonsterOverdoseCompany
     // ==========================================
     // 5. RÈGLE LÉVIATHAN
     // ==========================================
-    [HarmonyPatch(typeof(SandWormAI))]
     public class LeviathanIndoorPatch
     {
-        [HarmonyPatch("Update")]
-        [HarmonyPostfix]
-        static void CustomLeviathanMovement(SandWormAI __instance)
+        public static void CustomLeviathanMovement(SandWormAI __instance)
         {
             if (__instance.targetPlayer != null && ChaosManager.gameTimer >= 420f)
             {
